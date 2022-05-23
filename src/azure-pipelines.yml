@@ -1,0 +1,81 @@
+name: $(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
+
+trigger: none
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    pool:
+     vmImage: ubuntu-latest
+
+- stage: HML
+  jobs:
+  - job: DeployHML
+    pool:
+     vmImage: windows-latest
+
+    steps:  
+    - task: AzureAppServiceManage@0
+      inputs:
+        azureSubscription: 'Azure for Students(cb4f2a6e-9ec8-4628-beae-abdcc74333e8)'
+        Action: 'Stop Azure App Service'
+        #WebAppName: 'GomiEc8API-HML'
+        WebAppName: 'Ec8PRD'
+
+    - task: AzureWebApp@1
+      inputs:
+        azureSubscription: 'Azure for Students(cb4f2a6e-9ec8-4628-beae-abdcc74333e8)'
+        #appType: 'webAppLinux'
+        #appName: 'GomiEc8API-HML'
+        appType: 'webApp'
+        appName: 'Ec8PRD'
+        package: '$(System.DefaultWorkingDirectory)/src'
+        runtimeStack: 'NODE|16-lts'
+        customWebConfig: '-Handler iisnode -NodeStartFile server.js -appType node'
+
+
+    - task: AzureAppServiceManage@0
+      inputs:
+        azureSubscription: 'Azure for Students(cb4f2a6e-9ec8-4628-beae-abdcc74333e8)'
+        Action: 'Start Azure App Service'
+        WebAppName: 'Ec8PRD'
+
+
+- stage: PRD
+  jobs:
+  - job: DeployPRD
+    pool:
+     vmImage: ubuntu-latest
+
+    steps:   
+    - task: AzureAppServiceManage@0
+      inputs:
+        azureSubscription: 'Azure for Students(cb4f2a6e-9ec8-4628-beae-abdcc74333e8)'
+        Action: 'Stop Azure App Service'
+        #WebAppName: 'GomiEc8API'
+        WebAppName: 'GomiEC8PRD'
+
+    - task: Npm@1
+      inputs:
+        command: 'install'
+        workingDir: './src'
+
+    - task: AzureWebApp@1
+      inputs:
+        azureSubscription: 'Azure for Students(cb4f2a6e-9ec8-4628-beae-abdcc74333e8)'
+        appType: 'webAppLinux'
+        #appName: 'GomiEc8API' - OLD
+        appName: 'GomiEC8PRD'
+        package: '$(System.DefaultWorkingDirectory)/src'
+        runtimeStack: 'NODE|16-lts'
+        customWebConfig: '-Handler iisnode -NodeStartFile server.js -appType node'
+
+
+    - task: AzureAppServiceManage@0
+      inputs:
+        azureSubscription: 'Azure for Students(cb4f2a6e-9ec8-4628-beae-abdcc74333e8)'
+        Action: 'Start Azure App Service'
+        #WebAppName: 'GomiEc8API'
+        WebAppName: 'GomiEC8PRD'
+
